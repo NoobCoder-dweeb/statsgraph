@@ -1,15 +1,13 @@
 import streamlit as st
+from utils.common import scaffold_page
 
-def set_st_page_config():
-    st.set_page_config(
-        page_title="StatsGraph",
-        page_icon="📊",
-        layout="wide",
-    )
-
-    st.title("StatsGraph")
-    st.write(
-        """
+def app():
+    """
+    Renders the page content.
+    """
+    scaffold_page(
+        title="🏠 Home",
+        description="""
         Welcome! This toolkit helps you perform statistical analysis step by step:
 
         1. **Load & Clean Data**  
@@ -24,4 +22,4 @@ def set_st_page_config():
     )
 
 if __name__ == "__main__":
-    set_st_page_config()
+    app()
