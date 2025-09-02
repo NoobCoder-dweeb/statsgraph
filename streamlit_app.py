@@ -42,7 +42,7 @@ if __name__ == "__main__":
     
     pages = add_pages(pages, page_info=page_info)
 
-    st.session_state.setdefault("dataframes", None)
+    st.session_state.setdefault("dataframes", {})
     st.session_state.setdefault("state", 0)  # 0: Initial, 1: Data Loaded
 
     pages.run()

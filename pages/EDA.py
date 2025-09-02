@@ -11,8 +11,21 @@ def app():
     )
 
     if st.session_state.get("state") == 0:
-        st.error("Please complete the Data Cleaning step before proceeding to EDA.")
+        st.toast("Please complete the Data Cleaning step before proceeding to EDA.", 
+                 duration="long", 
+                 icon="⚠️")
         st.stop()
+
+    if "dataframes" in st.session_state and st.session_state["dataframes"] is not None:
+        st.subheader("Loaded DataFrames")
+        for key, df in st.session_state["dataframes"].items():
+            st.markdown(f"### {key}")
+            st.dataframe(
+                df,
+                use_container_width=True,
+                hide_index=True,
+            )
+        
 
 if __name__ == "__main__":
     app()
