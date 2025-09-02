@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from utils.common import scaffold_page
-from typing import List, Any, Dict
+from typing import Any
 
 def load_dataframe(uploaded_file: Any) -> pd.DataFrame:
     """
@@ -29,13 +29,21 @@ def app():
     if not uploaded_files:
         st.info("Please upload at least one file to proceed.")
         st.stop()
-
+    
+    if len(uploaded_files) > 2:
+        st.toast("You can upload multiple files, but at most 2 files.", 
+                 icon="⚠️", 
+                 duration="short")
+        st.stop()
     dataframes = {}
     if len(uploaded_files) > 0:
         st.subheader("Preview of Loaded Data")
 
     for i, uploaded_file in enumerate(uploaded_files):
         df = load_dataframe(uploaded_file)
+        columns = df.columns.tolist()
+
+
         dataframes[f"file_{i+1}_{uploaded_file.name}"] = df
 
     if st.session_state.get("dataframes") is None:
