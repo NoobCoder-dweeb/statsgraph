@@ -22,7 +22,7 @@ def app():
             st.markdown(f"### {key}")
             st.dataframe(
                 df,
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
         
