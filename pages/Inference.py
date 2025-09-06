@@ -1,28 +1,89 @@
 import streamlit as st
-import numpy as np
-import scipy
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
+from utils.compute import (t_test, 
+                           kendall_tau, 
+                           kurtosis_test, 
+                           spearman_corr,
+                           chi2_test,
+                           fisher_exact_test
+                           )
 from utils.common import scaffold_page
-from typing import Callable, Tuple
+from typing import Callable, Dict, Any, Optional
 
-"""
-Numerical: T-Tests, Dunett's test, Kendell's tau test, kurtosis tests, Spearman correlation coefficient
-Categorical: Chi-Squared Test, Fisher's exact test,
-"""
+HypothesisTest =  Callable[[pd.Series, pd.Series], Any]
 
-HypothesisTest =  Callable[[np.ndarray, np.ndarray, str], Tuple[float, float]]
-
-num_test = {
-    "ttest" : (0,1),
+num_test: Dict[str, HypothesisTest] = {
+    "T-Test" : t_test,
+    "Kendall's Tau": kendall_tau,
+    "Kurtosis Test": kurtosis_test,
+    "Spearman Correlation": spearman_corr,
 }
 
 cat_test = {
-    "chi2": (0,1),
+    "Chi-Squared Test": chi2_test,
+    "Fisher's Exact Test": fisher_exact_test,
 }
 
 available_tests: dict = {
     "numerical": num_test,
     "categorical": cat_test,
 }
+
+def plot_overlapping_histograms(x: pd.Series, y: pd.Series, x_label: Optional[str], y_label: Optional[str], title:str):
+    fig = go.Figure()
+    fig.add_trace(go.Histogram(
+        x=x,
+        name=x_label,
+        opacity=0.6,
+        marker_color="blue",
+        histnorm="probability density",
+    ))
+    fig.add_trace(go.Histogram(
+        x=y,
+        name=y_label,
+        opacity=0.6,
+        marker_color="red",
+        histnorm="probability density",
+    ))
+    fig.update_layout(
+        barmode="overlay",
+        title=title,
+        xaxis_title="Value",
+        yaxis_title="Density",
+    )
+
+    return fig
+
+def plot(df1_col, df2_col, test_type, test_select, x, y):
+    if test_type == "numerical":
+        if test_select in ["T-Test", "Kurtosis Test"]:
+            fig = plot_overlapping_histograms(x=x, y=y, x_label=df1_col, y_label=df2_col,
+                                                  title=f"{test_select}: Distribution Comparisons"
+                                                  )
+        else:
+            fig = px.scatter(x=x, y=y, labels={"x": df1_col, "y": df2_col},
+                                title=f"{test_select}: {df1_col} vs {df2_col}",
+                                )
+    else:
+        table = pd.crosstab(x, y)
+        fig = px.imshow(table, text_auto=True, aspect="auto",
+                            title=f"{test_select}: Crosstab",
+                            )
+            
+    st.plotly_chart(fig, width="stretch")
+
+def display_metrics(test_select, result):
+    if test_select == "Kurtosis Test":
+        st.metric(label="Kurtosis (Dataset 1)", value=f"{result[0]: .4f}")
+        st.metric(label="Kurtosis (Dataset 2)", value=f"{result[1]: .4f}")
+    else:
+        st.metric(label="Statistic", value=f"{result[0]: .4f}")
+        st.metric(label="p-value", value=f"{result[1]: .4g}")
+
+        if test_select in ["Kendall's Tau", "Spearman Correlation"]:
+            st.metric(label="R²", value=f"{result[0]**2: .4f}")
 
 def app():
     """
@@ -71,7 +132,8 @@ def app():
         st.stop()
     
     dtype = df1[df1_col].dtype
-    d_test = available_tests["numerical"] if dtype in ["int64", "float64"] else available_tests["categorical"]
+    test_type = "numerical" if dtype in ["int64", "float64"] else "categorical"
+    d_test = available_tests[test_type]
     
     test_options = list(d_test.keys())
     test_select = st.selectbox(
@@ -80,10 +142,19 @@ def app():
         index=0,
     )
     
-    # TODO: Apply test
-    if test_select:
-        pass
-        # msg = st.toast(f"{test_select} selected")
-        # msg.toast(f"{d_test[test_select]}")
+    x = df1[df1_col]
+    y = df2[df2_col]
+
+    if st.button("Run Test"):
+        test_func: HypothesisTest = d_test[test_select]
+        result = test_func(x, y)
+
+        # Display metrics            
+        display_metrics(test_select, result)
+
+        # Plot 
+        plot(df1_col, df2_col, test_type, test_select, x, y)
+
+
 if __name__ == "__main__":
     app()
