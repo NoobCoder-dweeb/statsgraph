@@ -3,6 +3,7 @@ from utils.common import scaffold_page
 from utils.compute import freedman_draconis_rule, sturges_rule
 import pandas as pd
 import math
+import io
 import plotly.express as px
 
 def initial_check() -> None:
@@ -33,6 +34,22 @@ def descriptive_statistics(df: pd.DataFrame) -> None:
     if st.checkbox("Show Descriptive Statistics"):
         st.subheader("Descriptive Statistics")
         st.write(df.describe(include='all').T)
+
+    if st.checkbox("Show Missing Values Summary"):
+        st.subheader("Missing Values Summary")
+        missing_summary = df.isnull().sum()
+        missing_summary = missing_summary[missing_summary > 0]
+        if not missing_summary.empty:
+            st.write(missing_summary)
+        else:
+            st.write("No missing values found.")
+
+    with st.expander("Expand to see table info"):
+        st.subheader("Table Information")
+        buffer = io.StringIO()
+        df.info(buf=buffer)
+        with st.spinner("Loading table info..."):
+            st.text(buffer.getvalue())
 
 def store_column_selection(col: str) -> None:
     if "selected_column" not in st.session_state:
@@ -95,7 +112,10 @@ def visualisations(df: pd.DataFrame)-> None:
         st.error("Selected column not found in the dataframe.")
         return
     
-    if st.button("Generate Visualisations"):
+    btn_plot = st.button("Generate Visualisations")
+    btn_correlation = st.button("Show Correlation Heatmap")
+
+    if btn_plot:
         col = st.session_state["selected_column"]
         column_data = df[col]
 
@@ -118,6 +138,15 @@ def visualisations(df: pd.DataFrame)-> None:
 
         else:
             st.error("Column type not supported for visualisations.")
+
+    if btn_correlation:
+        numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns
+        if len(numeric_cols) < 2:
+            st.error("Not enough numeric columns for correlation heatmap.")
+        else:
+            corr = df[numeric_cols].corr()
+            fig = px.imshow(corr, text_auto=True, aspect="auto", title="Correlation Heatmap")
+            st.plotly_chart(fig, width="stretch") 
 
 
 def app():
