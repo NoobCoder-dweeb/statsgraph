@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 from scipy import stats
-from typing import Tuple
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.preprocessing import PolynomialFeatures
 
 def freedman_draconis_rule(series: pd.Series) -> int:
     return int((series.max() - series.min()) // \
@@ -43,3 +44,29 @@ def fisher_exact_test(x: pd.Series, y: pd.Series):
         return np.nan, np.nan
 
 #---------------------- End of Statistical Tests --------------------------
+
+#---------------------- Modelling Techniques --------------------------
+
+def linear_regression(df, x, y):
+    model = LinearRegression()
+    model.fit(x,y)
+
+    return model
+
+def polynomial_regression(df, x, y):
+    poly = PolynomialFeatures(degree=2, include_bias=True)
+    poly_features = poly.fit_transform(x.reshape(-1,1))
+
+    model = LinearRegression()
+    model.fit(poly_features, y)
+
+    return model
+
+
+def logistic_regression(df, x, y):
+    model = LogisticRegression()
+    model.fit(x,y)
+
+    return model
+
+#---------------------- End of Modelling Techniques --------------------------
